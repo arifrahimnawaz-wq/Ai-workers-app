@@ -3,18 +3,13 @@ import streamlit as st
 from crewai import Agent, Task, Crew, Process
 from langchain_groq import ChatGroq
 from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 
-# ---------------------------------------------------------
-# Page config
-# ---------------------------------------------------------
 st.set_page_config(page_title="AI Research & Writing Crew", page_icon="🧠", layout="centered")
 
 st.title("🧠 AI Research & Writing Crew")
 st.caption("Powered by CrewAI + Groq (Llama 3.1) — 100% free to run")
 
-# ---------------------------------------------------------
-# Get Groq API key (Streamlit secrets first, then env var)
-# ---------------------------------------------------------
 def get_groq_api_key():
     try:
         return st.secrets["GROQ_API_KEY"]
@@ -30,29 +25,18 @@ if not groq_api_key:
     )
     st.stop()
 
-# ---------------------------------------------------------
-# LLM setup (free Groq model)
-# ---------------------------------------------------------
 llm = ChatGroq(
     groq_api_key=groq_api_key,
     model="groq/llama-3.1-70b-versatile",
     temperature=0.5,
 )
 
-# ---------------------------------------------------------
-# Tools
-# ---------------------------------------------------------
-search_tool = DuckDuckGoSearchRun()
+_ddg_wrapper = DuckDuckGoSearchAPIWrapper(max_results=5)
+search_tool = DuckDuckGoSearchRun(api_wrapper=_ddg_wrapper)
 
-# ---------------------------------------------------------
-# UI: topic input
-# ---------------------------------------------------------
 topic = st.text_input("Enter a topic for the blog post:", placeholder="e.g. The future of solar energy")
 run_button = st.button("🚀 Generate Article", type="primary", use_container_width=True)
 
-# ---------------------------------------------------------
-# Build and run the crew
-# ---------------------------------------------------------
 def build_crew(topic: str) -> Crew:
     researcher = Agent(
         role="Senior Research Analyst",
@@ -108,9 +92,6 @@ def build_crew(topic: str) -> Crew:
         verbose=True,
     )
 
-# ---------------------------------------------------------
-# Execution
-# ---------------------------------------------------------
 if run_button:
     if not topic.strip():
         st.warning("Please enter a topic first.")
